@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Update the PyPI publishing action to support Core Metadata 2.5 emitted by Hatchling.
+- First PyPI publication; no changes to the protocol library from 0.1.0.
+
 ## 0.1.0
 
 Initial release of the standalone WFTNP v1 protocol library.
