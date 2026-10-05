@@ -135,3 +135,13 @@ async def test_cancellation_releases_only_owned_resources(mdns, owned):
     assert mdns.browsers[0].cancelled
     assert mdns.instances[0].closed == owned
     assert not [t for t in asyncio.all_tasks() if t.get_name() == "wftnp-discovery"]
+
+
+async def test_browser_creation_failure_closes_owned_zeroconf(mdns, monkeypatch):
+    def fail(*args, **kwargs):
+        raise OSError("Cannot browse")
+
+    monkeypatch.setattr(zeroconf.asyncio, "AsyncServiceBrowser", fail)
+    with pytest.raises(OSError, match="Cannot browse"):
+        await discover()
+    assert mdns.instances[0].closed

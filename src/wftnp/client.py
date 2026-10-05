@@ -6,12 +6,12 @@ import logging
 import math
 import random
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from functools import partial
 from uuid import UUID
 
 from .connection import Connection
-from .exceptions import NotConnected, OperationRejected, SubscriptionError, WftnpError
+from .exceptions import NotConnected, OperationRejected, RequestTimeout, SubscriptionError, WftnpError
 from .models import Characteristic, ClientState, Endpoint, Notification, Service
 from .protocol import Opcode, decode_characteristics, decode_services, decode_value
 from .subscription import NotificationCallback, Subscription
@@ -209,7 +209,8 @@ class WftnpClient:
         """Subscribe once per UUID; omit callback to consume with async iteration."""
         if buffer_size < 1:
             raise ValueError("buffer_size must be positive")
-        async with self._subscription_lock:
+        self._ready_connection()
+        async with self._subscription_operation():
             connection = self._ready_connection()
             existing = self._subscriptions.get(characteristic)
             if existing is not None and not existing.closed:
@@ -227,9 +228,19 @@ class WftnpClient:
                 raise
             return subscription
 
+    @contextlib.asynccontextmanager
+    async def _subscription_operation(self) -> AsyncIterator[None]:
+        try:
+            async with asyncio.timeout(self._request_timeout), self._subscription_lock:
+                yield
+        except RequestTimeout:
+            raise
+        except TimeoutError as exc:
+            raise RequestTimeout("Subscription operation timed out") from exc
+
     async def _unsubscribe(self, subscription: Subscription) -> None:
         characteristic = subscription.characteristic
-        async with self._subscription_lock:
+        async with self._subscription_operation():
             if self._subscriptions.get(characteristic) is not subscription:
                 return
             del self._subscriptions[characteristic]

@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 
-from wftnp import ClientState, Endpoint, NotConnected, OperationRejected, WftnpClient
+from wftnp import ClientState, Endpoint, NotConnected, OperationRejected, RequestTimeout, WftnpClient
 
 from .support.server import CHARACTERISTIC, SERVICE, eventually
 
@@ -145,4 +145,24 @@ async def test_cancel_subscribe_removes_intent(client, server):
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
+    assert not client._subscriptions
+
+
+async def test_subscription_deadline_includes_wait_for_bookkeeping(client):
+    client._request_timeout = 0.02
+    async with client._subscription_lock:
+        with pytest.raises(RequestTimeout):
+            await client.subscribe(CHARACTERISTIC)
+    assert not client._subscriptions
+    assert client.state == ClientState.READY
+    assert await client.read_characteristic(CHARACTERISTIC) == b"value"
+
+
+async def test_subscribe_timeout_removes_intent(client, server):
+    async def silent(peer, req):
+        return req.operation == 5
+
+    server.handler = silent
+    with pytest.raises(RequestTimeout):
+        await client.subscribe(CHARACTERISTIC, lambda _: None)
     assert not client._subscriptions

@@ -93,11 +93,13 @@ async def discover(
             pending[name] = task
             tasks.add(task)
 
-    browser = AsyncServiceBrowser(azc.zeroconf, SERVICE_TYPE, handlers=[changed])
     try:
-        await asyncio.sleep(timeout)
+        browser = AsyncServiceBrowser(azc.zeroconf, SERVICE_TYPE, handlers=[changed])
+        try:
+            await asyncio.sleep(timeout)
+        finally:
+            await browser.async_cancel()
     finally:
-        await browser.async_cancel()
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
