@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wftnp"
+version = "0.1.0"
+description = "Typed asynchronous client for WFTNP (Wahoo Direct Connect)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{name = "Ben Johnson"}]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Framework :: AsyncIO",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+discovery = ["zeroconf>=0.148"]
+
+[project.urls]
+Homepage = "https://github.com/binarylogic/py-wftnp"
+Issues = "https://github.com/binarylogic/py-wftnp/issues"
+Changelog = "https://github.com/binarylogic/py-wftnp/releases"
+
+[dependency-groups]
+dev = ["pytest>=8.4", "pytest-asyncio>=1.1", "pytest-cov>=6", "ruff>=0.13", "ty>=0.0.1", "zeroconf>=0.148"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wftnp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+filterwarnings = ["error"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "ASYNC"]
+ignore = ["ASYNC109"]
+
+[tool.coverage.run]
+branch = true
+source = ["wftnp"]
+
+[tool.coverage.report]
+show_missing = true
+
+
+[tool.ruff.lint.per-file-ignores]
+"tests/support/server.py" = ["ASYNC110"]

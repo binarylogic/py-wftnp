@@ -1,0 +1,16 @@
+# Changelog
+
+## 0.1.0
+
+Initial release of the standalone WFTNP v1 protocol library.
+
+- Typed async service/characteristic discovery, reads, writes, and raw notifications.
+- Managed reconnect with backoff, read-only health probes, and subscription restoration.
+- Explicit deadlines, failure/cancellation behavior, and no replay of application requests.
+- Bounded, ordered callback or iterator delivery with observable consumer failures.
+- Optional mDNS discovery with caller-owned Zeroconf support.
+- Dependency-free core, Python 3.11+, Apache-2.0 license, and typed package marker.
+- Local TCP simulator tests and read-only validation against KICKR BIKE and KICKR RUN.
+
+Fitness-profile decoding, device control policy, and Home Assistant integration are
+outside this package. See `docs/hardware-validation.md` for observed compatibility limits.
