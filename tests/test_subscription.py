@@ -128,3 +128,64 @@ async def test_cancel_close_removes_intent_and_propagates(client, server):
         await task
     assert sub.closed and sub._consumer.done()
     assert not client._subscriptions
+
+
+async def test_stop_joins_callback_cleanup_after_failed_subscription_is_replaced(client, server):
+    entered = asyncio.Event()
+    cleaning = asyncio.Event()
+    release = asyncio.Event()
+    cleaned = asyncio.Event()
+
+    async def callback(notification):
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cleaning.set()
+            await release.wait()
+            cleaned.set()
+
+    old = await client.subscribe(CHARACTERISTIC, callback, buffer_size=1)
+    await server.peers[-1].notify(b"first")
+    await asyncio.wait_for(entered.wait(), 1)
+    await server.peers[-1].notify(b"second")
+    await server.peers[-1].notify(b"overflow")
+    with pytest.raises(SubscriptionOverflow):
+        await asyncio.wait_for(old.wait_closed(), 1)
+    await asyncio.wait_for(cleaning.wait(), 1)
+    await client.subscribe(CHARACTERISTIC)
+    stop = asyncio.create_task(client.stop())
+    try:
+        with pytest.raises(TimeoutError):
+            await asyncio.wait_for(asyncio.shield(stop), 0.03)
+    finally:
+        release.set()
+        await stop
+        await old.close()
+    assert cleaned.is_set()
+
+
+async def test_callback_cleanup_can_stop_an_already_stopping_client(client, server):
+    entered = asyncio.Event()
+    cleaned = asyncio.Event()
+
+    async def callback(notification):
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            await client.stop()
+            cleaned.set()
+
+    await client.subscribe(CHARACTERISTIC, callback)
+    await server.peers[-1].notify(b"notification")
+    await asyncio.wait_for(entered.wait(), 1)
+    stop = asyncio.create_task(client.stop())
+    try:
+        await asyncio.wait_for(asyncio.shield(stop), 1)
+        assert cleaned.is_set()
+    finally:
+        # Ensure a regression cannot strand the test runner's fixture shutdown.
+        for consumer in tuple(client._consumers):
+            consumer.cancel()
+        await stop

@@ -1,10 +1,22 @@
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import pytest
 
 from wftnp import WftnpClient
 
 from .support.server import FakeServer
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption("--hardware", action="store_true", help="Enable explicitly configured real-device tests")
+    parser.addoption("--hardware-config", default=".hardware.toml", help="Local hardware configuration path")
+
+
+def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool | None:
+    if collection_path.name == "hardware" and not config.getoption("--hardware"):
+        return True
+    return None
 
 
 @pytest.fixture

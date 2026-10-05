@@ -68,7 +68,10 @@ class WftnpClient:
         self._connection: Connection | None = None
         self._connection_id = 0
         self._task: asyncio.Task[None] | None = None
+        self._shutdown: asyncio.Task[None] | None = None
         self._subscriptions: dict[UUID, Subscription] = {}
+        # Callback lifetime can outlast subscription intent (failure/replacement).
+        self._consumers: set[asyncio.Task[None]] = set()
         self._running = False
         self._last_error: WftnpError | None = None
 
@@ -129,6 +132,10 @@ class WftnpClient:
 
     async def stop(self) -> None:
         """Finish cleanup before propagating cancellation of the stopping caller."""
+        if self._shutdown is not None and asyncio.current_task() in self._consumers:
+            # The active shutdown is already joining this callback. Waiting on it
+            # from the callback's finally block would create a cycle.
+            return
         async with self._lifecycle_lock:
             self._running = False
             self._set_state(ClientState.STOPPED)
@@ -144,18 +151,24 @@ class WftnpClient:
                     with contextlib.suppress(asyncio.CancelledError):
                         await self._task
                     self._task = None
-                for subscription in subscriptions:
-                    await subscription._wait_consumer(exclude=caller)
+                await asyncio.gather(
+                    *(consumer for consumer in self._consumers if consumer is not caller),
+                    return_exceptions=True,
+                )
 
             # A callback may itself stop the client. Do not cancel/join that caller.
             task = asyncio.create_task(cleanup(), name="wftnp-cleanup")
+            self._shutdown = task
             cancelled = False
-            while not task.done():
-                try:
-                    await asyncio.shield(task)
-                except asyncio.CancelledError:
-                    cancelled = True
-            task.result()
+            try:
+                while not task.done():
+                    try:
+                        await asyncio.shield(task)
+                    except asyncio.CancelledError:
+                        cancelled = True
+                task.result()
+            finally:
+                self._shutdown = None
             if cancelled:
                 raise asyncio.CancelledError
 
@@ -216,6 +229,9 @@ class WftnpClient:
             if existing is not None and not existing.closed:
                 raise ValueError(f"Already subscribed to {characteristic}")
             subscription = Subscription(characteristic, callback, buffer_size, self._unsubscribe)
+            if subscription._consumer is not None:
+                self._consumers.add(subscription._consumer)
+                subscription._consumer.add_done_callback(self._consumers.discard)
             self._subscriptions[characteristic] = subscription
             try:
                 await connection.request(

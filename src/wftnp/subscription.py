@@ -110,12 +110,8 @@ class Subscription(AsyncIterator[Notification]):
         finally:
             await self._wait_consumer()
 
-    async def _wait_consumer(self, *, exclude: asyncio.Task[object] | None = None) -> None:
-        if (
-            self._consumer is not None
-            and self._consumer is not asyncio.current_task()
-            and self._consumer is not exclude
-        ):
+    async def _wait_consumer(self) -> None:
+        if self._consumer is not None and self._consumer is not asyncio.current_task():
             await asyncio.gather(self._consumer, return_exceptions=True)
 
     async def __aenter__(self) -> "Subscription":

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
     from zeroconf.asyncio import AsyncZeroconf
 
 SERVICE_TYPE = "_wahoo-fitness-tnp._tcp.local."
+_LOGGER = logging.getLogger(__name__)
 
 
 def parse_advertisement(
@@ -102,7 +104,13 @@ async def discover(
     finally:
         for task in tasks:
             task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                _LOGGER.debug(
+                    "WFTNP discovery resolution failed",
+                    exc_info=(type(result), result, result.__traceback__),
+                )
         if owned:
             await azc.async_close()
     return tuple(found[name] for name in sorted(found))

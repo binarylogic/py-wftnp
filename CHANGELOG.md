@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2
+
+- Add a single opt-in, serial hardware test lane covering real notification streams,
+  interleaved reads, subscription disable/re-enable, and three TCP interruptions per device.
+- Join callback cleanup even after a failed subscription is replaced or removed.
+- Prevent deadlock when callback cleanup calls `stop()` during an existing shutdown.
+- Log mDNS resolution failures at debug level instead of silently discarding them.
+
 ## 0.1.1
 
 - Update the PyPI publishing action to support Core Metadata 2.5 emitted by Hatchling.

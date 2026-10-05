@@ -74,6 +74,11 @@ task build
 Tests use a local TCP simulator and require no hardware. Real-device checks are
 explicitly opted into and perform only discovery, reads, and notification subscriptions.
 
+For the single serial hardware lane, copy `hardware.example.toml` to `.hardware.toml`,
+fill in the device endpoints, and run `task test:hardware`. The configuration and
+JUnit report are gitignored. Normal tests and hosted CI never connect to equipment.
+See [hardware validation](docs/hardware-validation.md) for scope and results.
+
 ## Protocol basis
 
 WFTNP is a vendor-originated protocol with an unofficial public description:

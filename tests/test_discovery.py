@@ -145,3 +145,17 @@ async def test_browser_creation_failure_closes_owned_zeroconf(mdns, monkeypatch)
     with pytest.raises(OSError, match="Cannot browse"):
         await discover()
     assert mdns.instances[0].closed
+
+
+async def test_resolution_failure_is_logged_and_resources_are_closed(mdns, monkeypatch, caplog):
+    async def fail(*args, **kwargs):
+        raise OSError("Cannot resolve advertisement")
+
+    monkeypatch.setattr(zeroconf.asyncio.AsyncServiceInfo, "async_request", fail)
+    caplog.set_level("DEBUG", logger="wftnp.discovery")
+    task = asyncio.create_task(discover(timeout=0.01))
+    await asyncio.sleep(0)
+    mdns.browsers[0].change("device")
+    assert await task == ()
+    assert "Cannot resolve advertisement" in caplog.text
+    assert mdns.instances[0].closed

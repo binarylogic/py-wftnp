@@ -58,6 +58,9 @@ work themselves and remove their listener when no longer needed.
 tasks. It is idempotent. Once shutdown begins, cancellation of its caller is propagated
 only after cleanup finishes. A callback may close its subscription or stop its client.
 An explicit `start()` after stopping creates a new lifecycle; old subscriptions stay closed.
+Callback tasks remain tracked until they finish, even when subscription intent has been
+removed or replaced. A callback calling `stop()` during an existing shutdown returns
+without joining that shutdown, since the shutdown is already waiting for the callback.
 
 ## Request contract
 
@@ -128,3 +131,6 @@ checks metadata, and imports the installed wheel without optional dependencies.
 
 Hardware compatibility observations belong in [hardware validation](hardware-validation.md).
 No automated test sends equipment-control commands to real devices.
+`task test:hardware` runs the opt-in serial lane on a machine with access to configured
+equipment. A test-only TCP proxy rejects writes and injects actual socket closures;
+the hardware tests use only the public client API.

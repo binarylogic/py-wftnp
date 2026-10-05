@@ -6,6 +6,10 @@ tasks:
     cmds: [uv run ruff format .]
   test:
     cmds: [uv run pytest --cov=wftnp --cov-report=term-missing]
+  test:hardware:
+    desc: Run the single serial, opt-in real-device lane using .hardware.toml
+    cmds:
+      - uv run pytest tests/hardware --hardware -v -o junit_family=xunit1 --junitxml=.artifacts/hardware.xml {{.CLI_ARGS}}
   check:
     cmds:
       - uv run ruff check .

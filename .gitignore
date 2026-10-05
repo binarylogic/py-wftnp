@@ -8,3 +8,5 @@ htmlcov/
 dist/
 *.egg-info/
 .DS_Store
+.hardware.toml
+.artifacts/

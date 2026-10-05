@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wftnp"
-version = "0.1.1"
+version = "0.1.2"
 description = "Typed asynchronous client for WFTNP (Wahoo Direct Connect)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -42,6 +42,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 filterwarnings = ["error"]
+markers = ["hardware: opt-in read-only tests against configured real equipment"]
 
 [tool.ruff]
 target-version = "py311"

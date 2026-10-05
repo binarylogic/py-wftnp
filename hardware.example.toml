@@ -1,0 +1,17 @@
+# Copy to .hardware.toml (gitignored) and provide your device endpoints.
+# Only configure characteristics documented as safe to read/subscribe.
+stream_seconds = 30
+
+[[devices]]
+name = "bike"
+host = "bike.local"
+service = "00001826-0000-1000-8000-00805f9b34fb"
+read = "00002acc-0000-1000-8000-00805f9b34fb"
+notify = "00002ad2-0000-1000-8000-00805f9b34fb"
+
+[[devices]]
+name = "treadmill"
+host = "treadmill.local"
+service = "00001826-0000-1000-8000-00805f9b34fb"
+read = "00002acc-0000-1000-8000-00805f9b34fb"
+notify = "00002acd-0000-1000-8000-00805f9b34fb"
